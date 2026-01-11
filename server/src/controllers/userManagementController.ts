@@ -112,7 +112,7 @@ export async function bulkUpdateRolesHandler(request: Request, response: Respons
 
 export async function deleteUserHandler(request: Request, response: Response) {
   const { id } = request.params;
-  await deleteUser(id);
+  await deleteUser(id, request.user);
   return response.status(200).json({ message: "User deleted successfully." });
 }
 
@@ -122,6 +122,6 @@ export async function bulkDeleteUsersHandler(request: Request, response: Respons
     throw new AppError("User IDs are required.", 400);
   }
 
-  const deletedCount = await bulkDeleteUsers(userIds);
+  const deletedCount = await bulkDeleteUsers(userIds, request.user);
   return response.status(200).json({ message: `Deleted ${deletedCount} users.` });
 }

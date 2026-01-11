@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { LoadingOverlay } from "@/components/ui/loadingOverlay";
@@ -71,6 +71,13 @@ export default function TeamView({ currentUserRole, currentUserName }: TeamViewP
   const canCreateUsers = currentUserRole === "admin";
 
   const canEditMember = (_member: TeamMember) => canManageAll;
+  const canDeleteMember = (member: TeamMember) => canManageAll && member.role !== "Admin";
+
+  const selectedMembers = useMemo(
+    () => members.filter((member) => selectedIds.includes(member.id)),
+    [members, selectedIds]
+  );
+  const hasAdminSelection = selectedMembers.some((member) => member.role === "Admin");
 
   const setToast = (message: string, tone: "success" | "error") => {
     setToastMessage(message);
@@ -287,6 +294,10 @@ export default function TeamView({ currentUserRole, currentUserName }: TeamViewP
       setToast("Only admins can delete users.", "error");
       return;
     }
+    if (members.some((member) => ids.includes(member.id) && member.role === "Admin")) {
+      setToast("Admin accounts cannot be deleted.", "error");
+      return;
+    }
 
     setDeleteTarget({ ids, label: ids.length > 1 ? `${ids.length} users` : "this user" });
   };
@@ -418,7 +429,7 @@ export default function TeamView({ currentUserRole, currentUserName }: TeamViewP
             variant="secondary"
             type="button"
             onClick={() => handleDeleteMembers(selectedIds)}
-            disabled={!selectedIds.length || !canManageAll}
+            disabled={!selectedIds.length || !canManageAll || hasAdminSelection}
           >
             Delete Selected
           </Button>
@@ -479,20 +490,21 @@ export default function TeamView({ currentUserRole, currentUserName }: TeamViewP
               </tr>
             </thead>
             <tbody>
-              {pagedMembers.length ? (
-                pagedMembers.map((member) => {
-                  const canEdit = canEditMember(member);
-                  return (
-                    <tr key={member.id}>
-                      <td>
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.includes(member.id)}
-                          onChange={() => handleToggleSelect(member.id)}
-                          disabled={!canEdit}
-                          aria-label={`Select ${member.username}`}
-                        />
-                      </td>
+                {pagedMembers.length ? (
+                  pagedMembers.map((member) => {
+                    const canEdit = canEditMember(member);
+                    const canDelete = canDeleteMember(member);
+                    return (
+                      <tr key={member.id}>
+                        <td>
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.includes(member.id)}
+                            onChange={() => handleToggleSelect(member.id)}
+                            disabled={!canEdit}
+                            aria-label={`Select ${member.username}`}
+                          />
+                        </td>
                       <td>{member.username}</td>
                       <td>{member.email}</td>
                       <td>{member.joinedOn}</td>
@@ -510,7 +522,7 @@ export default function TeamView({ currentUserRole, currentUserName }: TeamViewP
                               <button type="button" className="tableAction" onClick={() => openEditForm(member)}>
                                 Edit
                               </button>
-                              {canManageAll ? (
+                              {canDelete ? (
                                 <button
                                   type="button"
                                   className="tableAction"
@@ -518,7 +530,9 @@ export default function TeamView({ currentUserRole, currentUserName }: TeamViewP
                                 >
                                   Delete
                                 </button>
-                              ) : null}
+                              ) : (
+                                <span className="caption">Admin account</span>
+                              )}
                             </>
                           ) : (
                             <span className="caption">View only</span>

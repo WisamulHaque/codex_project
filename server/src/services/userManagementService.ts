@@ -5,6 +5,7 @@ import { AppError } from "../utils/appError";
 import { ensureStrongPassword } from "../utils/passwordPolicy";
 import { hashPassword } from "../utils/passwordUtils";
 import { logInfo } from "../utils/logger";
+import type { TokenPayload } from "../utils/tokenFactory";
 
 const roleValues = ["admin", "manager", "employee"] as const;
 type RoleValue = (typeof roleValues)[number];
@@ -250,16 +251,36 @@ export async function bulkUpdateUserRoles(userIds: string[], role: string) {
   return result.modifiedCount;
 }
 
-export async function deleteUser(userId: string) {
-  const user = await UserModel.findByIdAndDelete(userId);
+export async function deleteUser(userId: string, actor?: TokenPayload) {
+  if (!actor) {
+    throw new AppError("Unauthorized.", 401);
+  }
+  if (actor.userId === userId) {
+    throw new AppError("You cannot delete your own account.", 403);
+  }
+  const user = await UserModel.findById(userId);
   if (!user) {
     throw new AppError("User not found.", 404);
   }
+  if (user.role === "admin") {
+    throw new AppError("You cannot delete admin accounts.", 403);
+  }
+  await user.deleteOne();
   logInfo("service", `User deleted ${user.email}`);
   return true;
 }
 
-export async function bulkDeleteUsers(userIds: string[]) {
+export async function bulkDeleteUsers(userIds: string[], actor?: TokenPayload) {
+  if (!actor) {
+    throw new AppError("Unauthorized.", 401);
+  }
+  if (userIds.includes(actor.userId)) {
+    throw new AppError("You cannot delete your own account.", 403);
+  }
+  const users = await UserModel.find({ _id: { $in: userIds } });
+  if (users.some((user) => user.role === "admin")) {
+    throw new AppError("You cannot delete admin accounts.", 403);
+  }
   const result = await UserModel.deleteMany({ _id: { $in: userIds } });
   logInfo("service", `Bulk delete for ${result.deletedCount ?? 0} users`);
   return result.deletedCount ?? 0;
