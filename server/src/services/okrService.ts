@@ -6,6 +6,7 @@ import type { OkrInput, KeyResultStatus } from "../types/okrTypes";
 import { AppError } from "../utils/appError";
 import { logInfo } from "../utils/logger";
 import { createOwnerChangeNotifications, createProgressNotifications } from "./notificationService";
+import { sendSlackMessage } from "./slackService";
 import type { TokenPayload } from "../utils/tokenFactory";
 
 interface OkrQueryParams {
@@ -257,6 +258,12 @@ export async function createOkr(input: OkrInput) {
       removedOwners: []
     });
   }
+
+  const ownerLabel = owners.length ? owners.join(", ") : "Unassigned";
+  const categoryLabel = okr.category ?? "Unspecified";
+  const departmentLabel = okr.vertical ?? "Unspecified";
+  const slackText = `New OKR created: "${okr.objective}"\nOwners: ${ownerLabel}\nDue: ${okr.dueDate}\nCategory: ${categoryLabel}\nDepartment: ${departmentLabel}`;
+  void sendSlackMessage({ text: slackText });
 
   return mapOkr(okr);
 }

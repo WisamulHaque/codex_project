@@ -41,8 +41,13 @@ SMTP (optional but recommended for email flows):
 - `SMTP_PASS`
 - `SMTP_FROM` (e.g., `no-reply@yourdomain.com`)
 
+Slack (optional):
+- `SLACK_WEBHOOK_URL` = incoming webhook URL
+- `SLACK_CHANNEL` = channel name (e.g., `#okr-updates`, optional if webhook is locked to a channel)
+
 Frontend (optional):
 - `VITE_API_BASE_URL` = `/api/v1` (default is already `/api/v1` in production)
+- `VITE_GOOGLE_CLIENT_ID` = Google OAuth Client ID (required for Google login button)
 
 ## 4) MongoDB Atlas checklist
 1. **Network access**: Allow your Netlify IPs, or temporarily allow `0.0.0.0/0` for testing.
@@ -63,3 +68,9 @@ Frontend (optional):
 - SPA routing is handled via a catch‑all redirect to `/index.html`.
 - If verification emails are not arriving, check SMTP env vars or Netlify function logs.
 
+## 8) Slack setup (for OKR created notifications)
+1. Go to https://api.slack.com/apps → **Create New App**.
+2. Under **Incoming Webhooks**, toggle **Activate Incoming Webhooks** on.
+3. Click **Add New Webhook to Workspace** and choose your target channel.
+4. Copy the webhook URL and set `SLACK_WEBHOOK_URL` in Netlify.
+5. (Optional) Set `SLACK_CHANNEL` if you want to override the channel in the payload.

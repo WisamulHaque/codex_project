@@ -231,7 +231,7 @@ export default function TeamView({ currentUserRole, currentUserName }: TeamViewP
 
         setToast("User updated successfully!", "success");
       } else {
-        const response = await createUser({
+        await createUser({
           fullName: formState.username,
           email: formState.email,
           role: mapRoleToApi(formState.role),
@@ -239,11 +239,7 @@ export default function TeamView({ currentUserRole, currentUserName }: TeamViewP
           designation: formState.designation,
           manager: formState.manager
         });
-        if (response.verificationToken) {
-          setToast("User created. Share the verification token for login.", "success");
-        } else {
-          setToast("User created successfully!", "success");
-        }
+        setToast("User created successfully! Invite email sent.", "success");
         setPage(1);
       }
 

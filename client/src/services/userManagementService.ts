@@ -1,4 +1,4 @@
-import { logError, logInfo } from "@/utils/logger";
+import { logError, logInfo, logWarn } from "@/utils/logger";
 import { fetchWithRetry } from "@/utils/fetchWithRetry";
 import { getAuthSession } from "@/utils/authStorage";
 
@@ -103,14 +103,16 @@ export async function createUser(payload: {
   designation?: string;
   manager?: string;
 }) {
-  return request<{ data: UserSummary; message?: string; verificationToken?: string }>("/users", {
+  return request<{ data: UserSummary; message?: string }>("/users", {
     method: "POST",
     body: JSON.stringify(payload)
   });
 }
 
-export async function bulkCreateUsers(payload: { users: Array<Omit<Parameters<typeof createUser>[0], "role"> & { role?: ApiRole }> }) {
-  return request<{ data: Array<{ user: UserSummary; verificationToken?: string }>; message?: string }>(
+export async function bulkCreateUsers(payload: {
+  users: Array<Omit<Parameters<typeof createUser>[0], "role"> & { role?: ApiRole }>;
+}) {
+  return request<{ data: Array<{ user: UserSummary }>; message?: string }>(
     "/users/bulk",
     {
       method: "POST",
@@ -147,14 +149,29 @@ export async function bulkUpdateRoles(payload: { userIds: string[]; role: ApiRol
 }
 
 export async function deleteUser(userId: string) {
-  return request<{ message: string }>(`/users/${userId}`, {
-    method: "DELETE"
-  });
+  try {
+    return await request<{ message: string }>(`/users/${userId}`, {
+      method: "DELETE"
+    });
+  } catch (error) {
+    logWarn("service", "DELETE /users/:id failed, retrying with POST", error);
+    return request<{ message: string }>(`/users/${userId}/delete`, {
+      method: "POST"
+    });
+  }
 }
 
 export async function bulkDeleteUsers(payload: { userIds: string[] }) {
-  return request<{ message: string }>("/users/bulk", {
-    method: "DELETE",
-    body: JSON.stringify(payload)
-  });
+  try {
+    return await request<{ message: string }>("/users/bulk", {
+      method: "DELETE",
+      body: JSON.stringify(payload)
+    });
+  } catch (error) {
+    logWarn("service", "DELETE /users/bulk failed, retrying with POST", error);
+    return request<{ message: string }>("/users/bulk-delete", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+  }
 }

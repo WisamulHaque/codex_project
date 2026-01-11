@@ -32,4 +32,6 @@ userRoutes.patch("/users/:id", requireAuth, requireRole(["admin"]), asyncHandler
 userRoutes.patch("/users/:id/role", requireAuth, requireRole(["admin"]), asyncHandler(updateUserRoleHandler));
 userRoutes.patch("/users/roles/bulk", requireAuth, requireRole(["admin"]), asyncHandler(bulkUpdateRolesHandler));
 userRoutes.delete("/users/:id", requireAuth, requireRole(["admin"]), asyncHandler(deleteUserHandler));
+userRoutes.post("/users/:id/delete", requireAuth, requireRole(["admin"]), asyncHandler(deleteUserHandler));
 userRoutes.delete("/users/bulk", requireAuth, requireRole(["admin"]), asyncHandler(bulkDeleteUsersHandler));
+userRoutes.post("/users/bulk-delete", requireAuth, requireRole(["admin"]), asyncHandler(bulkDeleteUsersHandler));

@@ -50,7 +50,7 @@ export async function createUserHandler(request: Request, response: Response) {
     throw new AppError("Full name and email are required.", 400);
   }
 
-  const { user, verificationToken } = await createUser({
+  const { user } = await createUser({
     fullName,
     email,
     role: normalizeRoleInput(role),
@@ -61,8 +61,7 @@ export async function createUserHandler(request: Request, response: Response) {
 
   return response.status(201).json({
     data: toUserSummary(user),
-    message: "User created successfully.",
-    verificationToken
+    message: "User created successfully."
   });
 }
 
@@ -75,8 +74,7 @@ export async function bulkCreateUsersHandler(request: Request, response: Respons
   const created = await bulkCreateUsers(users);
   return response.status(201).json({
     data: created.map((entry) => ({
-      user: toUserSummary(entry.user),
-      verificationToken: entry.verificationToken
+      user: toUserSummary(entry.user)
     })),
     message: `Created ${created.length} users.`
   });

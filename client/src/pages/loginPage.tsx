@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { LoadingOverlay } from "@/components/ui/loadingOverlay";
@@ -82,6 +82,7 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
   const [googleStatus, setGoogleStatus] = useState<GoogleStatus>("idle");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastActionLabel, setToastActionLabel] = useState<string | null>(null);
+  const googleScriptPromiseRef = useRef<Promise<void> | null>(null);
   const [loginErrors, setLoginErrors] = useState<LoginErrors>({});
   const [signupErrors, setSignupErrors] = useState<SignupErrors>({});
   const [resetSent, setResetSent] = useState(false);
@@ -130,19 +131,49 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
     };
   }, [signupForm.password]);
 
-  useEffect(() => {
-    if (!googleClientId || typeof window === "undefined" || window.google?.accounts?.id) {
-      return;
+  const ensureGoogleScript = useCallback(() => {
+    if (typeof window === "undefined") {
+      return Promise.reject(new Error("Google login is unavailable."));
+    }
+    if (window.google?.accounts?.id) {
+      return Promise.resolve();
+    }
+    if (googleScriptPromiseRef.current) {
+      return googleScriptPromiseRef.current;
     }
 
-    const script = document.createElement("script");
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.defer = true;
-    script.onload = () => logInfo("ui", "Google script loaded");
-    script.onerror = () => logWarn("ui", "Failed to load Google sign-in script");
-    document.head.appendChild(script);
+    googleScriptPromiseRef.current = new Promise<void>((resolve, reject) => {
+      const existing = document.querySelector<HTMLScriptElement>('script[src="https://accounts.google.com/gsi/client"]');
+      if (existing) {
+        existing.addEventListener("load", () => resolve());
+        existing.addEventListener("error", () => reject(new Error("Failed to load Google sign-in")));
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        logInfo("ui", "Google script loaded");
+        resolve();
+      };
+      script.onerror = () => {
+        logWarn("ui", "Failed to load Google sign-in script");
+        reject(new Error("Failed to load Google sign-in"));
+      };
+      document.head.appendChild(script);
+    });
+
+    return googleScriptPromiseRef.current;
   }, []);
+
+  useEffect(() => {
+    if (!googleClientId) {
+      return;
+    }
+    void ensureGoogleScript().catch(() => undefined);
+  }, [ensureGoogleScript]);
 
   const handleLoginSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -210,13 +241,28 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
     }
   };
 
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
     setGoogleStatus("loading");
     logInfo("ui", "Google login initiated");
 
-    if (!googleClientId || !window.google?.accounts?.id) {
+    if (!googleClientId) {
       setGoogleStatus("failed");
-      setToastMessage("Google login is not configured for this environment.");
+      setToastMessage("Google login is not configured. Set VITE_GOOGLE_CLIENT_ID and redeploy.");
+      return;
+    }
+
+    try {
+      await ensureGoogleScript();
+    } catch (error) {
+      setGoogleStatus("failed");
+      setToastMessage("Google login could not be initialized. Please retry.");
+      logWarn("ui", "Google login script unavailable", error);
+      return;
+    }
+
+    if (!window.google?.accounts?.id) {
+      setGoogleStatus("failed");
+      setToastMessage("Google login could not be initialized. Please retry.");
       return;
     }
 
@@ -258,7 +304,7 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
 
   const handleRetryGoogle = () => {
     logInfo("ui", "Google login retry");
-    handleGoogleLogin();
+    void handleGoogleLogin();
   };
 
   const handleResetPassword = async (event: FormEvent<HTMLFormElement>) => {
