@@ -173,8 +173,7 @@ p {
 }
 
 .iconButton:focus-visible,
-.avatarButton:focus-visible,
-.toggleSwitch:focus-visible {
+.avatarButton:focus-visible {
   outline: 2px solid rgba(59, 130, 246, 0.7);
   outline-offset: 2px;
 }
@@ -771,53 +770,6 @@ p {
   color: #86efac;
 }
 
-.settingsCard {
-  display: grid;
-  gap: var(--space-3);
-}
-
-.settingsRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-2);
-  padding-bottom: var(--space-2);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-}
-
-.settingsRow:last-child {
-  border-bottom: none;
-}
-
-.toggleSwitch {
-  width: 48px;
-  height: 28px;
-  border-radius: 999px;
-  background: rgba(148, 163, 184, 0.2);
-  border: 1px solid rgba(148, 163, 184, 0.4);
-  position: relative;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.toggleKnob {
-  position: absolute;
-  top: 3px;
-  left: 4px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #ffffff;
-  transition: transform 0.2s ease;
-}
-
-.toggleOn {
-  background: rgba(59, 130, 246, 0.6);
-}
-
-.toggleOn .toggleKnob {
-  transform: translateX(18px);
-}
 
 .placeholderGrid {
   display: grid;

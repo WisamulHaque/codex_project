@@ -8,8 +8,7 @@ export type AppPage =
   | "team"
   | "reports"
   | "notifications"
-  | "profile"
-  | "settings";
+  | "profile";
 
 interface AppShellProps {
   children: ReactNode;
@@ -128,9 +127,6 @@ export function AppShell({
                     User management for Admin
                   </button>
                 ) : null}
-                <button type="button" role="menuitem" onClick={() => handleMenuSelect("settings")}>
-                  Settings
-                </button>
                 <button type="button" role="menuitem" onClick={handleLogoutClick}>
                   Logout
                 </button>

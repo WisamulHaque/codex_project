@@ -12,7 +12,6 @@ const TeamView = React.lazy(() => import("@/pages/dashboard/teamView"));
 const ReportsView = React.lazy(() => import("@/pages/dashboard/reportsView"));
 const NotificationsView = React.lazy(() => import("@/pages/dashboard/notificationsView"));
 const ProfileView = React.lazy(() => import("@/pages/dashboard/profileView"));
-const SettingsView = React.lazy(() => import("@/pages/dashboard/settingsView"));
 
 interface DashboardPageProps {
   onLogout: () => void;
@@ -227,9 +226,6 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
         ) : null}
         {activePage === "profile" ? (
           <ProfileView onDirtyChange={setHasUnsavedChanges} />
-        ) : null}
-        {activePage === "settings" ? (
-          <SettingsView onDirtyChange={setHasUnsavedChanges} />
         ) : null}
       </Suspense>
     </AppShell>
