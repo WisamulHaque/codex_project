@@ -503,14 +503,6 @@ export default function OkrsView({
     setActiveMenuOkrId(null);
   };
 
-  const openCopyForm = (okr: Okr) => {
-    setFormMode("copy");
-    setActiveOkr(okr);
-    setIsFormOpen(true);
-    setToastMessage(null);
-    setActiveMenuOkrId(null);
-  };
-
   const handleFormSubmit = (values: OkrFormValues) => {
     const assignMessage = values.owners.length > 1 ? `OKR assigned to ${values.owners.length} users.` : null;
     const okrStatus = formMode === "create" ? "onTrack" : activeOkr?.status ?? "onTrack";
@@ -1041,16 +1033,6 @@ export default function OkrsView({
                             disabled={!canEdit}
                           >
                             {canEdit ? "Edit OKR" : "Edit OKR (Owner/Creator only)"}
-                          </button>
-                          <button
-                            type="button"
-                            role="menuitem"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              openCopyForm(okr);
-                            }}
-                          >
-                            Copy OKR
                           </button>
                           <button
                             type="button"

@@ -225,13 +225,14 @@ export default function TeamView({ currentUserRole, currentUserName }: TeamViewP
     setIsLoading(true);
     try {
       if (editingMember) {
-        await updateUser(editingMember.id, {
+        const updatePayload = {
           fullName: formState.username,
           email: formState.email,
-          department: formState.department,
-          designation: formState.designation,
-          manager: formState.manager
-        });
+          department: formState.department.trim() || undefined,
+          designation: formState.designation.trim() || undefined,
+          manager: formState.manager.trim() || undefined
+        };
+        await updateUser(editingMember.id, updatePayload);
 
         if (canManageAll && formState.role !== editingMember.role) {
           await updateUserRole(editingMember.id, mapRoleToApi(formState.role));
@@ -239,14 +240,15 @@ export default function TeamView({ currentUserRole, currentUserName }: TeamViewP
 
         setToast("User updated successfully!", "success");
       } else {
-        await createUser({
+        const createPayload = {
           fullName: formState.username,
           email: formState.email,
           role: mapRoleToApi(formState.role),
-          department: formState.department,
-          designation: formState.designation,
-          manager: formState.manager
-        });
+          department: formState.department.trim() || undefined,
+          designation: formState.designation.trim() || undefined,
+          manager: formState.manager.trim() || undefined
+        };
+        await createUser(createPayload);
         setToast("User created successfully! Invite email sent.", "success");
         setPage(1);
       }
@@ -627,33 +629,6 @@ export default function TeamView({ currentUserRole, currentUserName }: TeamViewP
               <option value="Manager">Manager</option>
               <option value="Admin">Admin</option>
             </select>
-          </div>
-          <div className="inputField">
-            <label htmlFor="userDepartment">Department</label>
-            <input
-              id="userDepartment"
-              className="inputControl"
-              value={formState.department}
-              onChange={(event) => setFormState((prev) => ({ ...prev, department: event.target.value }))}
-            />
-          </div>
-          <div className="inputField">
-            <label htmlFor="userDesignation">Designation</label>
-            <input
-              id="userDesignation"
-              className="inputControl"
-              value={formState.designation}
-              onChange={(event) => setFormState((prev) => ({ ...prev, designation: event.target.value }))}
-            />
-          </div>
-          <div className="inputField">
-            <label htmlFor="userManager">Manager</label>
-            <input
-              id="userManager"
-              className="inputControl"
-              value={formState.manager}
-              onChange={(event) => setFormState((prev) => ({ ...prev, manager: event.target.value }))}
-            />
           </div>
         </div>
       </Modal>
