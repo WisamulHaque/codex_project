@@ -4,10 +4,8 @@ import { Modal } from "@/components/ui/modal";
 import { LoadingOverlay } from "@/components/ui/loadingOverlay";
 import { logInfo, logWarn } from "@/utils/logger";
 import {
-  bulkCreateUsers,
   bulkDeleteUsers,
   bulkUpdateRoles,
-  createUser,
   deleteUser,
   listUsers,
   updateUser,
@@ -30,7 +28,6 @@ interface TeamMember {
 
 interface TeamViewProps {
   currentUserRole: "admin" | "manager" | "employee";
-  currentUserName: string;
 }
 
 const roleFilters = ["all", "Admin", "Manager", "Employee"] as const;
@@ -44,7 +41,7 @@ const emptyFormState: Omit<TeamMember, "id" | "okrsAssigned" | "joinedOn"> = {
   manager: ""
 };
 
-export default function TeamView({ currentUserRole, currentUserName }: TeamViewProps) {
+export default function TeamView({ currentUserRole }: TeamViewProps) {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState<(typeof roleFilters)[number]>("all");
@@ -54,21 +51,17 @@ export default function TeamView({ currentUserRole, currentUserName }: TeamViewP
   const [totalItems, setTotalItems] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [formState, setFormState] = useState(emptyFormState);
   const [bulkRole, setBulkRole] = useState<TeamMember["role"]>("Employee");
   const [deleteTarget, setDeleteTarget] = useState<{ ids: string[]; label: string } | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastTone, setToastTone] = useState<"success" | "error">("success");
-  const [bulkFile, setBulkFile] = useState<File | null>(null);
-  const [bulkImportError, setBulkImportError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
   const pageSize = 5;
 
   const canManageAll = currentUserRole === "admin";
-  const canCreateUsers = currentUserRole === "admin";
 
   const canEditMember = (_member: TeamMember) => canManageAll;
   const canDeleteMember = (member: TeamMember) => canManageAll && member.role !== "Admin";
@@ -191,12 +184,6 @@ export default function TeamView({ currentUserRole, currentUserName }: TeamViewP
     });
   };
 
-  const openCreateForm = () => {
-    setEditingMember(null);
-    setFormState({ ...emptyFormState, manager: currentUserName });
-    setIsFormOpen(true);
-  };
-
   const openEditForm = (member: TeamMember) => {
     setEditingMember(member);
     setFormState({
@@ -221,37 +208,24 @@ export default function TeamView({ currentUserRole, currentUserName }: TeamViewP
       setToast("Only admins can manage users.", "error");
       return;
     }
+    if (!editingMember) {
+      setToast("User creation is disabled.", "error");
+      return;
+    }
 
     setIsLoading(true);
     try {
-      if (editingMember) {
-        const updatePayload = {
-          fullName: formState.username,
-          email: formState.email,
-          department: formState.department.trim() || undefined,
-          designation: formState.designation.trim() || undefined,
-          manager: formState.manager.trim() || undefined
-        };
-        await updateUser(editingMember.id, updatePayload);
+      const updatePayload = {
+        fullName: formState.username,
+        email: formState.email
+      };
+      await updateUser(editingMember.id, updatePayload);
 
-        if (canManageAll && formState.role !== editingMember.role) {
-          await updateUserRole(editingMember.id, mapRoleToApi(formState.role));
-        }
-
-        setToast("User updated successfully!", "success");
-      } else {
-        const createPayload = {
-          fullName: formState.username,
-          email: formState.email,
-          role: mapRoleToApi(formState.role),
-          department: formState.department.trim() || undefined,
-          designation: formState.designation.trim() || undefined,
-          manager: formState.manager.trim() || undefined
-        };
-        await createUser(createPayload);
-        setToast("User created successfully! Invite email sent.", "success");
-        setPage(1);
+      if (canManageAll && formState.role !== editingMember.role) {
+        await updateUserRole(editingMember.id, mapRoleToApi(formState.role));
       }
+
+      setToast("User updated successfully!", "success");
 
       setIsFormOpen(false);
       setReloadKey((prev) => prev + 1);
@@ -304,50 +278,6 @@ export default function TeamView({ currentUserRole, currentUserName }: TeamViewP
     setDeleteTarget({ ids, label: ids.length > 1 ? `${ids.length} users` : "this user" });
   };
 
-  const parseCsvFile = async (file: File) => {
-    const content = await file.text();
-    const lines = content.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-    if (lines.length < 2) {
-      throw new Error("CSV must include a header row and at least one user.");
-    }
-
-    const headers = lines[0].split(",").map((header) => header.trim());
-    const requiredHeaders = ["fullName", "email"];
-    const missingHeaders = requiredHeaders.filter((header) => !headers.includes(header));
-    if (missingHeaders.length) {
-      throw new Error(`Missing required columns: ${missingHeaders.join(", ")}`);
-    }
-
-    const findValue = (row: string[], key: string) => {
-      const index = headers.indexOf(key);
-      return index >= 0 ? row[index]?.trim() ?? "" : "";
-    };
-
-    const rows = lines.slice(1).map((line) => {
-      const values = line.split(",").map((value) => value.trim());
-      const roleValue = findValue(values, "role");
-      const normalizedRole = roleValue?.toLowerCase();
-      const role =
-        normalizedRole === "admin" || normalizedRole === "manager" || normalizedRole === "employee"
-          ? (normalizedRole as ApiRole)
-          : undefined;
-
-      return {
-        fullName: findValue(values, "fullName"),
-        email: findValue(values, "email"),
-        role,
-        department: findValue(values, "department"),
-        designation: findValue(values, "designation"),
-        manager: findValue(values, "manager")
-      };
-    });
-    const filtered = rows.filter((row) => row.fullName && row.email);
-    if (!filtered.length) {
-      throw new Error("No valid users found in the CSV.");
-    }
-    return filtered;
-  };
-
   const confirmDelete = () => {
     if (!deleteTarget) {
       return;
@@ -388,18 +318,7 @@ export default function TeamView({ currentUserRole, currentUserName }: TeamViewP
           <p className="muted">Manage users, roles, and access to OKRs.</p>
         </div>
         <div className="sectionActions">
-          {!canCreateUsers ? (
-            <span className="caption">View-only access</span>
-          ) : (
-            <>
-              <Button variant="secondary" type="button" onClick={() => setIsBulkImportOpen(true)}>
-                Bulk Import
-              </Button>
-              <Button type="button" onClick={openCreateForm}>
-                Create User
-              </Button>
-            </>
-          )}
+          <span className="caption">User creation is managed outside this app.</span>
         </div>
       </div>
 
@@ -580,7 +499,7 @@ export default function TeamView({ currentUserRole, currentUserName }: TeamViewP
 
       <Modal
         isOpen={isFormOpen}
-        title={editingMember ? "Edit User" : "Create User"}
+        title="Edit User"
         size="lg"
         onClose={() => setIsFormOpen(false)}
         actions={
@@ -630,68 +549,6 @@ export default function TeamView({ currentUserRole, currentUserName }: TeamViewP
               <option value="Admin">Admin</option>
             </select>
           </div>
-        </div>
-      </Modal>
-
-      <Modal
-        isOpen={isBulkImportOpen}
-        title="Bulk User Import"
-        onClose={() => {
-          setIsBulkImportOpen(false);
-          setBulkImportError(null);
-          setBulkFile(null);
-        }}
-        actions={
-          <>
-            <Button variant="secondary" type="button" onClick={() => setIsBulkImportOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={async () => {
-                if (!bulkFile) {
-                  setBulkImportError("Please select a CSV file to upload.");
-                  return;
-                }
-                setIsLoading(true);
-                setBulkImportError(null);
-                try {
-                  const users = await parseCsvFile(bulkFile);
-                  if (!users.length) {
-                    throw new Error("No users found in the CSV.");
-                  }
-                  await bulkCreateUsers({ users });
-                  setToast("Bulk import completed successfully!", "success");
-                  setIsBulkImportOpen(false);
-                  setBulkFile(null);
-                  setReloadKey((prev) => prev + 1);
-                } catch (error) {
-                  const message = error instanceof Error ? error.message : "Bulk import failed.";
-                  setBulkImportError(message);
-                  setToast(message, "error");
-                } finally {
-                  setIsLoading(false);
-                }
-              }}
-            >
-              Upload CSV
-            </Button>
-          </>
-        }
-      >
-        <div className="bulkImport">
-          <p className="muted">Upload a CSV file with user details to create accounts in bulk.</p>
-          <input
-            type="file"
-            className="fileInput"
-            accept=".csv"
-            onChange={(event) => {
-              setBulkFile(event.target.files?.[0] ?? null);
-              setBulkImportError(null);
-            }}
-          />
-          <p className="caption">Expected headers: fullName, email, role, department, designation, manager</p>
-          {bulkImportError ? <span className="errorText">{bulkImportError}</span> : null}
         </div>
       </Modal>
 

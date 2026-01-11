@@ -214,9 +214,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
             onOkrOpened={() => setPendingOpenOkrId(null)}
           />
         ) : null}
-        {activePage === "team" ? (
-          <TeamView currentUserRole={userRole} currentUserName={userName} />
-        ) : null}
+        {activePage === "team" ? <TeamView currentUserRole={userRole} /> : null}
         {activePage === "reports" ? <ReportsView /> : null}
         {activePage === "notifications" ? (
           <NotificationsView
