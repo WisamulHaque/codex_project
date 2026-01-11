@@ -8,6 +8,7 @@ import {
   bulkDeleteUsers,
   bulkUpdateRoles,
   createUser,
+  deleteUser,
   listUsers,
   updateUser,
   updateUserRole,

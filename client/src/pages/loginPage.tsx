@@ -86,7 +86,6 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
   const [loginErrors, setLoginErrors] = useState<LoginErrors>({});
   const [signupErrors, setSignupErrors] = useState<SignupErrors>({});
   const [resetSent, setResetSent] = useState(false);
-  const [verificationToken, setVerificationToken] = useState<string | null>(null);
   const [verificationInput, setVerificationInput] = useState("");
   const [authEmail, setAuthEmail] = useState("");
 
@@ -223,7 +222,6 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
       const lowerMessage = message.toLowerCase();
       if (lowerMessage.includes("verify")) {
         setAuthView("verifyEmail");
-        setVerificationToken(null);
         setToastMessage(message);
       } else if (lowerMessage.includes("email")) {
         setLoginErrors((prev) => ({ ...prev, email: message }));
@@ -373,7 +371,7 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
         password: signupForm.password
       });
 
-      setVerificationToken(response.verificationToken ?? null);
+      void response;
       setAuthView("verifyEmail");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Signup failed.";
@@ -726,9 +724,6 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
                   <div className="envelopeTop" />
                 </div>
                 <p className="caption">We sent a verification link to {authEmail || "your email"}.</p>
-                {verificationToken ? (
-                  <p className="successText">Dev token: {verificationToken}</p>
-                ) : null}
                 <div className="inputField">
                   <label htmlFor="verifyToken">Verification Token</label>
                   <input
@@ -774,7 +769,7 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
                     setIsSubmitting(true);
                     try {
                       const response = await resendVerification({ email: authEmail.trim() });
-                      setVerificationToken(response.verificationToken ?? null);
+                      void response;
                       setToastMessage("Verification email resent.");
                     } catch (error) {
                       const message = error instanceof Error ? error.message : "Unable to resend verification.";
