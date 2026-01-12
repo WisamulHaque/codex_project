@@ -365,8 +365,16 @@ export function OkrFormModal({
                     <input
                       className="inputControl"
                       type="number"
+                      min={0}
                       value={result.current}
-                      onChange={(event) => handleKeyResultChange(index, "current", Number(event.target.value))}
+                      onChange={(event) => {
+                        const nextValue = Number(event.target.value);
+                        handleKeyResultChange(
+                          index,
+                          "current",
+                          Number.isNaN(nextValue) ? 0 : Math.max(0, nextValue)
+                        );
+                      }}
                     />
                   </div>
                   <div className="inputField">
@@ -374,8 +382,16 @@ export function OkrFormModal({
                     <input
                       className="inputControl"
                       type="number"
+                      min={0}
                       value={result.target}
-                      onChange={(event) => handleKeyResultChange(index, "target", Number(event.target.value))}
+                      onChange={(event) => {
+                        const nextValue = Number(event.target.value);
+                        handleKeyResultChange(
+                          index,
+                          "target",
+                          Number.isNaN(nextValue) ? 0 : Math.max(0, nextValue)
+                        );
+                      }}
                     />
                   </div>
                   <div className="inputField">

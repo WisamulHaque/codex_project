@@ -34,6 +34,12 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
+function ensureAllowedEmailDomain(email: string) {
+  if (!email.endsWith("@emumba.com")) {
+    throw new AppError("Only @emumba.com email addresses can create an account.", 400);
+  }
+}
+
 function buildAccessToken(user: UserDocument) {
   const payload: TokenPayload = {
     userId: user._id.toString(),
@@ -70,6 +76,7 @@ function issueTokens(user: UserDocument) {
 
 export async function registerUser(input: RegisterInput) {
   const email = normalizeEmail(input.email);
+  ensureAllowedEmailDomain(email);
   const existingUser = await UserModel.findOne({ email });
   if (existingUser) {
     throw new AppError("This email is already in use. Try logging in instead.", 409);
@@ -240,6 +247,7 @@ export async function loginWithGoogle(input: GoogleLoginInput) {
     return { user: existingUser, ...tokens };
   }
 
+  ensureAllowedEmailDomain(email);
   const user = await UserModel.create({
     firstName: googleProfile.firstName,
     lastName: googleProfile.lastName,

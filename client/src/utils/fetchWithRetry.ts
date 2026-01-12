@@ -1,3 +1,5 @@
+import { clearAuthSession, getAuthSession } from "@/utils/authStorage";
+
 export interface RetryOptions {
   retries?: number;
   retryDelayMs?: number;
@@ -35,6 +37,9 @@ export async function fetchWithRetry(
   while (attempt <= retries) {
     try {
       const response = await fetch(input, init);
+      if (response.status === 401 && getAuthSession()) {
+        clearAuthSession();
+      }
       if (!shouldRetry(response)) {
         return response;
       }

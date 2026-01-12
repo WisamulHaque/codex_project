@@ -336,6 +336,8 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
     }
     if (!signupForm.email.trim()) {
       nextErrors.email = "Email is required.";
+    } else if (!signupForm.email.trim().toLowerCase().endsWith("@emumba.com")) {
+      nextErrors.email = "Use your @emumba.com email address.";
     }
     if (!signupForm.password.trim()) {
       nextErrors.password = "Password is required.";

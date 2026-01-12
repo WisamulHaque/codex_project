@@ -621,9 +621,10 @@ export default function OkrsView({
   };
 
   const handleKeyResultDraftChange = (id: string, field: "current" | "target", value: number) => {
+    const nextValue = Number.isNaN(value) ? 0 : Math.max(0, value);
     setKeyResultDrafts((prev) => ({
       ...prev,
-      [id]: { ...(prev[id] ?? { current: 0, target: 0 }), [field]: value }
+      [id]: { ...(prev[id] ?? { current: 0, target: 0 }), [field]: nextValue }
     }));
   };
 
@@ -1195,6 +1196,7 @@ export default function OkrsView({
                           <input
                             className="inputControl inputControlSm"
                             type="number"
+                            min={0}
                             value={keyResultDrafts[result.id]?.current ?? result.current}
                             onChange={(event) =>
                               handleKeyResultDraftChange(result.id, "current", Number(event.target.value))
@@ -1206,6 +1208,7 @@ export default function OkrsView({
                           <input
                             className="inputControl inputControlSm"
                             type="number"
+                            min={0}
                             value={keyResultDrafts[result.id]?.target ?? result.target}
                             onChange={(event) =>
                               handleKeyResultDraftChange(result.id, "target", Number(event.target.value))
